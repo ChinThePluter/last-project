@@ -15,6 +15,7 @@ import zoomPlugin from "chartjs-plugin-zoom";
 import { Button } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 
+// Register necessary Chart.js modules and plugins
 ChartJS.register(
   TimeScale,
   LinearScale,
@@ -26,21 +27,21 @@ ChartJS.register(
   zoomPlugin
 );
 
-const Chart = ({ title, data, labels }) => {
-  // Using useRef to reference the chart instance
+const Chart = ({ title, data, labels, borderColor = "rgba(75,192,192,1)" }) => {
+  // Reference for the chart instance
   const chartRef = useRef(null);
 
   const chartData = {
-    labels,
+    labels, // Use datetime labels
     datasets: [
       {
         label: title,
-        data,
-        borderColor: "rgba(75,192,192,1)", // Set line color explicitly
-        backgroundColor: "rgba(75,192,192,0.1)", // Optional fill for better visibility
+        data: data,
+        borderColor: borderColor, // Use the borderColor prop for dynamic color
+        backgroundColor: "rgba(75,192,192,0.1)", // Optional fill for visibility
         borderWidth: 2, // Set line thickness
-        pointBackgroundColor: "rgba(75,192,192,1)", // Color for data points
-        pointBorderColor: "rgba(75,192,192,1)", // Border color for data points
+        pointBackgroundColor: borderColor, // Point color matching line color
+        pointBorderColor: borderColor,
         pointRadius: 3, // Radius of points on the line
         fill: false, // Disable fill under the line if not needed
         tension: 0.1,
@@ -61,16 +62,16 @@ const Chart = ({ title, data, labels }) => {
       zoom: {
         pan: {
           enabled: true,
-          mode: "x",
+          mode: "x", // Pan only along the x-axis
         },
         zoom: {
           wheel: {
-            enabled: true,
+            enabled: true, // Enable zooming with mouse wheel
           },
           pinch: {
-            enabled: true,
+            enabled: true, // Enable pinch zooming for touch devices
           },
-          mode: "x",
+          mode: "x", // Zoom only along the x-axis
         },
       },
     },
@@ -79,7 +80,11 @@ const Chart = ({ title, data, labels }) => {
         type: "time",
         time: {
           unit: "second",
-          tooltipFormat: "yyyy-MM-dd HH:mm:ss.SSS",
+          stepSize: 5,
+          displayFormats: {
+            second: "HH:mm:ss",
+          },
+          tooltipFormat: "yyyy-MM-dd HH:mm:ss.SSS", // Include milliseconds in tooltip
         },
         title: {
           display: true,
@@ -93,6 +98,10 @@ const Chart = ({ title, data, labels }) => {
           text: title,
         },
       },
+    },
+    animation: {
+      y: 0,
+      duration: 1,
     },
   };
 
@@ -111,7 +120,7 @@ const Chart = ({ title, data, labels }) => {
         onClick={resetZoom}
         style={{
           position: "absolute",
-          top: "wvh",
+          top: "2vh",
           left: "2vw",
           zIndex: 1,
         }}

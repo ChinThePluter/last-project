@@ -168,22 +168,25 @@ const Review = () => {
           title="Energy Consumption"
           data={reviewData.energyConsumption}
           labels={reviewData.timestamps}
+          borderColor="lightblue"
         />
         <Chart
           title="Pressure"
           data={reviewData.pressure}
           labels={reviewData.timestamps}
+          borderColor="#FF7F7F"
         />
         <Chart
           title="Force"
           data={reviewData.force}
           labels={reviewData.timestamps}
+          borderColor="orange"
         />
         <Chart
           title="Position of Punch"
           data={reviewData.position}
           labels={reviewData.timestamps}
-          
+          borderColor="purple"
         />
       </div>
     </div>
