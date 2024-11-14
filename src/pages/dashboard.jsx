@@ -8,14 +8,14 @@ const DashboardPage = () => {
   const [wsData, setWsData] = useState({
     energyConsumption: [],
     pressure: [],
-    punch: [],
+    force: [],
     position: [],
   });
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    const ws = new WebSocket("ws://your-websocket-url"); // Replace with your WebSocket URL
+    const ws = new WebSocket("ws://your-websocket-url");
 
     ws.onopen = () => {
       console.log("Connected to WebSocket");
@@ -51,10 +51,6 @@ const DashboardPage = () => {
     ws.send(wsMessage);
   };
 
-  const goToTable = () => {
-    navigate("/table"); // Navigate to the /table page
-  };
-
   return (
     <div
       style={{
@@ -70,13 +66,21 @@ const DashboardPage = () => {
       {/* Button for navigating to table page */}
       <Button
         type="primary"
-        onClick={goToTable}
-        style={{ position: "absolute", top: "20px", right: "20px", zIndex: 1 }}
+        onClick={() => navigate("/table")}
+        style={{ position: "absolute", top: "4vh", right: "4vw", zIndex: 1 }}
       >
         Go to Table
       </Button>
 
-      <h1>Raspberry Pi Dashboard</h1>
+      <Button
+        type="primary"
+        onClick={() => navigate("/review")}
+        style={{ position: "absolute", top: "4vh", left: "4vw", zIndex: 1 }}
+      >
+        Review
+      </Button>
+
+      <h1>CRMA DASHBOARD</h1>
       <h2>Status: {isWorking ? "Working" : "Stopped"}</h2>
       <button onClick={toggleStatus}>{isWorking ? "Stop" : "Start"}</button>
 
@@ -93,7 +97,7 @@ const DashboardPage = () => {
       >
         <Chart title="Energy Consumption" data={wsData.energyConsumption} />
         <Chart title="Pressure" data={wsData.pressure} />
-        <Chart title="Punch" data={wsData.punch} />
+        <Chart title="Force" data={wsData.force} />
         <Chart title="Position of Punch" data={wsData.position} />
       </div>
     </div>
