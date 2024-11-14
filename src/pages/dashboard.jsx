@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { Button } from "antd";
+import { useNavigate } from "react-router-dom";
 import Chart from "../Component/chart";
 
 const DashboardPage = () => {
@@ -9,6 +11,8 @@ const DashboardPage = () => {
     punch: [],
     position: [],
   });
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const ws = new WebSocket("ws://your-websocket-url"); // Replace with your WebSocket URL
@@ -47,6 +51,10 @@ const DashboardPage = () => {
     ws.send(wsMessage);
   };
 
+  const goToTable = () => {
+    navigate("/table"); // Navigate to the /table page
+  };
+
   return (
     <div
       style={{
@@ -54,11 +62,20 @@ const DashboardPage = () => {
         flexDirection: "column",
         alignItems: "center",
         minHeight: "100vh",
-        minWidth : "100vw",
+        minWidth: "100vw",
         padding: "2vh 0",
         backgroundColor: "#121212", // Set a background color for better contrast
       }}
     >
+      {/* Button for navigating to table page */}
+      <Button
+        type="primary"
+        onClick={goToTable}
+        style={{ position: "absolute", top: "20px", right: "20px", zIndex: 1 }}
+      >
+        Go to Table
+      </Button>
+
       <h1>Raspberry Pi Dashboard</h1>
       <h2>Status: {isWorking ? "Working" : "Stopped"}</h2>
       <button onClick={toggleStatus}>{isWorking ? "Stop" : "Start"}</button>

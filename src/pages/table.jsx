@@ -1,5 +1,7 @@
 import React from 'react';
-import { Table, Card, Typography } from 'antd';
+import { Table, Card, Typography, Button } from 'antd';
+import { ArrowLeftOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 
 const { Title } = Typography;
 
@@ -8,21 +10,21 @@ const columns = [
     title: 'MFCC',
     dataIndex: 'mfcc',
     key: 'mfcc',
-    align: 'center', // Center-aligns the column data
+    align: 'center',
   },
   {
     title: 'FFT',
     dataIndex: 'fft',
     key: 'fft',
-    align: 'center', // Center-aligns the column data
+    align: 'center',
   },
   {
     title: 'Result',
     dataIndex: 'result',
     key: 'result',
-    align: 'center', // Center-aligns the column data
+    align: 'center',
     render: (text) => (
-      <span style={{ color: text === 'N' ? 'green' : 'red' }}>{text}</span> // Conditional coloring
+      <span style={{ color: text === 'N' ? 'green' : 'red' }}>{text}</span>
     ),
   },
 ];
@@ -51,6 +53,12 @@ const data = [
 ];
 
 const MyTable = () => {
+  const navigate = useNavigate();
+
+  const handleBackToDashboard = () => {
+    navigate('/'); // Navigate to the dashboard route
+  };
+
   return (
     <div
       style={{
@@ -58,7 +66,7 @@ const MyTable = () => {
         justifyContent: 'center',
         alignItems: 'center',
         minHeight: '100vh',
-        backgroundColor: '#f0f2f5',
+        // backgroundColor: '#f0f2f5',
         padding: '2rem',
       }}
     >
@@ -67,8 +75,18 @@ const MyTable = () => {
           minWidth: '95vw',
           boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
           borderRadius: '8px',
+          position: 'relative',
         }}
       >
+        <Button
+          type="primary"
+          icon={<ArrowLeftOutlined />}
+          onClick={handleBackToDashboard}
+          style={{ position: 'absolute', top: '16px', left: '16px', zIndex: 1 }}
+        >
+          Dashboard
+        </Button>
+
         <Title level={2} style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
           Data Table
         </Title>
