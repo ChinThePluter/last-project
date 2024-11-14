@@ -1,43 +1,49 @@
-import React, { useRef } from 'react';
-import { Line } from 'react-chartjs-2';
-import { Button } from 'antd';
-import { ReloadOutlined } from '@ant-design/icons';
+import React, { useRef } from "react";
+import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
-  CategoryScale,
+  TimeScale,
   LinearScale,
   PointElement,
   LineElement,
   Title,
   Tooltip,
   Legend,
-} from 'chart.js';
-import zoomPlugin from 'chartjs-plugin-zoom';
+} from "chart.js";
+import "chartjs-adapter-date-fns";
+import zoomPlugin from "chartjs-plugin-zoom";
+import { Button } from "antd";
+import { ReloadOutlined } from "@ant-design/icons";
 
-// Register the components and plugins
 ChartJS.register(
-  CategoryScale,
+  TimeScale,
   LinearScale,
   PointElement,
   LineElement,
   Title,
   Tooltip,
   Legend,
-  zoomPlugin // Register zoom plugin here
+  zoomPlugin
 );
 
-const Chart = ({ title, data }) => {
+const Chart = ({ title, data, labels }) => {
+  // Using useRef to reference the chart instance
   const chartRef = useRef(null);
 
   const chartData = {
-    labels: Array.from({ length: data.length }, (_, i) => i + 1),
+    labels,
     datasets: [
       {
         label: title,
-        data: data,
-        borderColor: 'rgba(75,192,192,1)',
-        backgroundColor: 'rgba(75,192,192,0.2)',
-        fill: true,
+        data,
+        borderColor: "rgba(75,192,192,1)", // Set line color explicitly
+        backgroundColor: "rgba(75,192,192,0.1)", // Optional fill for better visibility
+        borderWidth: 2, // Set line thickness
+        pointBackgroundColor: "rgba(75,192,192,1)", // Color for data points
+        pointBorderColor: "rgba(75,192,192,1)", // Border color for data points
+        pointRadius: 3, // Radius of points on the line
+        fill: false, // Disable fill under the line if not needed
+        tension: 0.1,
       },
     ],
   };
@@ -55,25 +61,29 @@ const Chart = ({ title, data }) => {
       zoom: {
         pan: {
           enabled: true,
-          mode: 'xy', // Allows panning in both directions
+          mode: "x",
         },
         zoom: {
           wheel: {
-            enabled: true, // Enables zooming with mouse wheel
+            enabled: true,
           },
           pinch: {
-            enabled: true, // Enables zooming with pinch gesture
+            enabled: true,
           },
-          mode: 'xy', // Allows zooming in both directions
+          mode: "x",
         },
       },
     },
     scales: {
       x: {
-        type: 'category',
+        type: "time",
+        time: {
+          unit: "second",
+          tooltipFormat: "yyyy-MM-dd HH:mm:ss.SSS",
+        },
         title: {
           display: true,
-          text: 'Time',
+          text: "Time",
         },
       },
       y: {
@@ -86,29 +96,29 @@ const Chart = ({ title, data }) => {
     },
   };
 
-  const handleResetZoom = () => {
+  const resetZoom = () => {
     if (chartRef.current) {
       chartRef.current.resetZoom();
     }
   };
 
   return (
-    <div style={{ width: '100%', height: '300px', position: 'relative' }}>
-      <Line ref={chartRef} data={chartData} options={options} />
+    <div style={{ width: "100%", height: "300px", position: "relative" }}>
       <Button
         type="primary"
         icon={<ReloadOutlined />}
-        shape="circle"
-        onClick={handleResetZoom}
+        shape="square"
+        onClick={resetZoom}
         style={{
-          position: 'absolute',
-          top: '10px',
-          right: '10px',
+          position: "absolute",
+          top: "wvh",
+          left: "2vw",
           zIndex: 1,
-          fontSize: '14px',
-          padding: '4px',
         }}
-      />
+      >
+        Zoom Reset
+      </Button>
+      <Line ref={chartRef} data={chartData} options={options} />
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { DatePicker, Button } from "antd";
+import axios from "axios";
+import { DatePicker, Button, notification } from "antd";
 import { useNavigate } from "react-router-dom";
 import Chart from "../Component/chart";
 import moment from "moment";
@@ -10,31 +11,72 @@ const Review = () => {
   const [reviewData, setReviewData] = useState({
     energyConsumption: [],
     pressure: [],
-    punch: [],
+    force: [],
     position: [],
+    timestamps: [],
   });
+  const [authToken, setAuthToken] = useState("");
+  const API_BASE = "http://localhost:5000";
 
   const [dateRange, setDateRange] = useState([null, null]);
   const navigate = useNavigate();
 
-  // Mock function to fetch data based on date range
+  const login = async () => {
+    try {
+      const response = await axios.post(`${API_BASE}/login`, {
+        username: "admin",
+        password: "admin",
+      });
+      setAuthToken(response.data.access_token);
+    } catch (error) {
+      notification.error({
+        message: "Login failed",
+        description: error.message,
+      });
+    }
+  };
+
   const fetchData = async (startDate, endDate) => {
     try {
-      // Example API call with date filtering (uncomment when API is ready)
-      // const response = await fetch(`/api/review_data?start=${startDate}&end=${endDate}`);
-      // const data = await response.json();
+      console.log(`Fetching data from ${startDate} to ${endDate}`);
+      const response = await axios.get(`${API_BASE}/data/filter`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+        params: { start: startDate, end: endDate },
+      });
 
-      // Mock data representing historical data based on selected dates
-      const data = {
-        energyConsumption: [12, 15, 13, 10, 9, 12, 11, 13, 10, 9],
-        pressure: [23, 22, 24, 20, 21, 23, 22, 25, 21, 20],
-        punch: [5, 6, 4, 5, 6, 5, 5, 4, 6, 5],
-        position: [1, 2, 3, 4, 3, 2, 1, 2, 3, 4],
-      };
+      // Create an array of objects with timestamp and data values
+      const rawData = response.data.map((entry) => ({
+        timestamp: moment(
+          entry["timestamp"],
+          "YYYY-MM-DD HH:mm:ss:SSS"
+        ).toISOString(),
+        energyConsumption: entry["Energy Consumption"].Power,
+        pressure: entry["Pressure"],
+        force: entry["Force"],
+        position: entry["Position of the Punch"],
+      }));
 
-      setReviewData(data);
+      // Sort the array by timestamp
+      rawData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+      // Extract sorted data into separate arrays
+      const energyConsumption = rawData.map((item) => item.energyConsumption);
+      const pressure = rawData.map((item) => item.pressure);
+      const force = rawData.map((item) => item.force);
+      const position = rawData.map((item) => item.position);
+      const timestamps = rawData.map((item) => item.timestamp);
+
+      // Set the sorted data in state
+      setReviewData({
+        energyConsumption,
+        pressure,
+        force,
+        position,
+        timestamps,
+      });
     } catch (error) {
-      console.error("Failed to fetch review data", error);
+      notification.error({ message: "Failed to fetch data" });
+      console.error("Fetch error:", error.response?.data || error.message);
     }
   };
 
@@ -44,15 +86,24 @@ const Review = () => {
 
   const applyFilter = () => {
     if (dateRange[0] && dateRange[1]) {
-      const startDate = dateRange[0].format("YYYY-MM-DD");
-      const endDate = dateRange[1].format("YYYY-MM-DD");
+      const startDate = dateRange[0].format("YYYY-MM-DD HH:mm:ss:SSS"); // Format with milliseconds
+      const endDate = dateRange[1].format("YYYY-MM-DD HH:mm:ss:SSS");
       fetchData(startDate, endDate); // Fetch data based on selected range
     }
   };
 
+  const clearFilter = () => {
+    setReviewData({
+      energyConsumption: [],
+      pressure: [],
+      force: [],
+      position: [],
+      timestamps: [],
+    });
+  };
+
   useEffect(() => {
-    // Initial fetch for default data on page load
-    fetchData();
+    login(); // Automatically log in on initial render
   }, []);
 
   return (
@@ -63,10 +114,9 @@ const Review = () => {
         alignItems: "center",
         minHeight: "100vh",
         padding: "2vh 0",
-        backgroundColor: "#121212", // Background for better contrast
+        backgroundColor: "#121212",
       }}
     >
-      {/* Back to Home Button */}
       <Button
         type="primary"
         onClick={() => navigate("/")}
@@ -78,32 +128,63 @@ const Review = () => {
       <h1>Raspberry Pi Review</h1>
       <h2>Data Review - Specific Past Period</h2>
 
-      {/* Time Filter */}
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "2vh" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          marginBottom: "2vh",
+        }}
+      >
         <RangePicker
+          showTime={{ format: "HH:mm:ss" }}
+          format="YYYY-MM-DD HH:mm:ss:SSS"
           value={dateRange}
           onChange={handleDateChange}
-          style={{ width: "300px" , borderColor : "#fbfbfb" , borderRadius: "10px" , border : '10px' }}
-          disabledDate={(current) => current && current > moment().endOf('day')} // Disable future dates
+          style={{
+            width: "300px",
+            borderColor: "#fbfbfb",
+            borderRadius: "10px",
+          }}
+          disabledDate={(current) => current && current > moment().endOf("day")}
         />
-        <Button type="primary" onClick={applyFilter}>Apply Filter</Button>
+        <Button type="primary" onClick={applyFilter}>
+          Apply Filter
+        </Button>
+        <Button onClick={clearFilter}>Clear Filter</Button>
       </div>
 
-      {/* Chart Section */}
       <div
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           gap: "3vw",
-          width: "99vw", // Make the grid occupy more width
+          width: "99vw",
           marginTop: "2vh",
-          padding: "2vh 0", // Add padding for spacing within the grid area
+          padding: "2vh 0",
         }}
       >
-        <Chart title="Energy Consumption" data={reviewData.energyConsumption} />
-        <Chart title="Pressure" data={reviewData.pressure} />
-        <Chart title="Punch" data={reviewData.punch} />
-        <Chart title="Position of Punch" data={reviewData.position} />
+        <Chart
+          title="Energy Consumption"
+          data={reviewData.energyConsumption}
+          labels={reviewData.timestamps}
+        />
+        <Chart
+          title="Pressure"
+          data={reviewData.pressure}
+          labels={reviewData.timestamps}
+        />
+        <Chart
+          title="Force"
+          data={reviewData.force}
+          labels={reviewData.timestamps}
+        />
+        <Chart
+          title="Position of Punch"
+          data={reviewData.position}
+          labels={reviewData.timestamps}
+          
+        />
       </div>
     </div>
   );
