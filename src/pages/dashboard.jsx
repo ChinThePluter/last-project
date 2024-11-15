@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Button, Modal, notification } from "antd";
+import { Button, Modal, notification, Select } from "antd";
 import { useNavigate } from "react-router-dom";
 import Chart from "../Component/chart";
 import axios from "axios";
@@ -22,10 +22,10 @@ const DashboardPage = () => {
   const navigate = useNavigate();
   const wsRef = useRef(null);
   const API_KEY = "piadmin"; // Store the API key here
+  const WS_KEY = "b494dcdf28532e5c28fa69056c3b9223";
   const API_BASE = "http://192.168.1.108:5000";
   const API_SERVER = "http://localhost:5000";
-  let authToken = "";
-
+  const [authToken, setAuthToken] = useState("");
   const statusStyles = {
     started: { color: "green", fontSize: "2em", fontWeight: "bold" },
     stopped: { color: "orange", fontSize: "2em", fontWeight: "bold" },
@@ -36,36 +36,38 @@ const DashboardPage = () => {
     setSelectedFile(event.target.value);
   };
 
-  // const login = async () => {
-  //   try {
-  //     const response = await axios.post(`${API_BASE}/login`, {
-  //       username: "chin",
-  //       password: "1234",
-  //     });
-  //     authToken = response.data.access_token;
-  //   } catch (error) {
-  //     notification.error({ message: "Login failed" });
-  //   }
-  // };
+  const login = async () => {
+    try {
+      const response = await axios.post(`${API_SERVER}/login`, {
+        username: "admin",
+        password: "admin",
+      });
+      setAuthToken(response.data.access_token);
+    } catch (error) {
+      notification.error({
+        message: "Login failed",
+        description: error.message,
+      });
+    }
+  };
 
   const fetchFileList = async () => {
     try {
-      const response = await axios.get(`${API_BASE}/list_files`, {
-        headers: { "X-API-KEY": API_KEY },
+      const response = await axios.get(`${API_SERVER}/list_files`, {
+        headers: { Authorization: `Bearer ${authToken}` },
       });
-      setFileList(response.files);
+      setFileList(response.data.files);
     } catch (error) {
       console.error("Error fetching status:", error);
       setPiStatus("error");
     }
   };
 
-  const handleDownload = async () => {
+  const handleDownload = async (filename) => {
     try {
-      const response = await axios.get(`${API_BASE}/list_files`, {
+      const response = await axios.post(`${API_BASE}/fetch_and_download`, filename , {
         headers: { "X-API-KEY": API_KEY },
       });
-      setFileList(response.files);
     } catch (error) {
       console.error("Error fetching status:", error);
       setPiStatus("error");
@@ -100,6 +102,16 @@ const DashboardPage = () => {
   };
 
   useEffect(() => {
+    login();
+  }, []);
+
+  useEffect(() => {
+    if (authToken) {
+      fetchFileList();
+    }
+  }, [authToken]);
+
+  useEffect(() => {
     fetchStatus(); // Initial fetch on mount
 
     const intervalId = setInterval(fetchStatus, 5000); // Fetch every 5 seconds
@@ -124,7 +136,7 @@ const DashboardPage = () => {
 
       wsRef.current.onopen = () => {
         console.log("Connected to WebSocket");
-        wsRef.current.send(apiKey);
+        wsRef.current.send(WS_KEY);
       };
 
       wsRef.current.onmessage = (event) => {
@@ -224,7 +236,7 @@ const DashboardPage = () => {
         onClick={() => navigate("/review")}
         style={{ position: "absolute", top: "4vh", left: "4vw", zIndex: 1 }}
       >
-        Reviewc
+        Review
       </Button>
 
       <h1>CRMA ALPHA DASHBOARD</h1>
@@ -245,27 +257,46 @@ const DashboardPage = () => {
           Start
         </Button>
         <h2 style={statusStyles[piStatus]}>Status: {piStatus}</h2>
-        <p>Use the buttons below to start or stop the Raspberry Pi process.</p>
-        <label htmlFor="fileDropdown">Select a file:</label>
-        <select
-          id="fileDropdown"
-          value={selectedFile}
-          onChange={handleFileSelect}
-        >
-          <option value="">Select a File</option>
-          {fileList.map((file, index) => (
-            <option key={index} value={file}>
-              {file}
-            </option>
-          ))}
-        </select>
-        <button onClick={handleDownload}>Download</button>
+        <p>
+          Use the buttons below to make the Raspberry Pi download selected wav
+          file.
+        </p>
+        <div style={{ marginTop: "20px" }}>
+          <label
+            htmlFor="fileDropdown"
+            style={{ color: "white", marginRight: "10px" }}
+          >
+            Select a file:
+          </label>
+          <Select
+            id="fileDropdown"
+            value={selectedFile}
+            onChange={handleFileSelect}
+            placeholder="Select a File"
+            style={{ width: 200, marginRight: "10px" }}
+          >
+            {Array.isArray(fileList) &&
+              fileList.map((file, index) => (
+                <Select.Option key={index} value={file}>
+                  {file}
+                </Select.Option>
+              ))}
+          </Select>
+          <Button
+            // onClick={handleDownload}
+            onClick={() => console.log(fileList)}
+            type="primary"
+            // disabled={!selectedFile}
+          >
+            Download
+          </Button>
+        </div>
       </Modal>
       <h2 style={statusStyles[piStatus]}>Status: {piStatus}</h2>
       <Button
         onClick={() => setIsConsoleVisible(true)}
         type="primary"
-        disabled={piStatus === "error"}
+        // disabled={piStatus === "error"}
       >
         Open Console
       </Button>
