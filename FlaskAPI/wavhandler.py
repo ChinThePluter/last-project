@@ -48,6 +48,23 @@ def login():
     else:
         return jsonify({'error': 'Invalid credentials'}), 401
 
+@app.route('/list_files', methods=['GET'])
+@jwt_required()
+def list_files():
+    try:
+        # Ensure the folder exists
+        if not os.path.exists(UPLOAD_FOLDER):
+            return jsonify({"error": "Upload folder does not exist"}), 404
+
+        # List all files in the folder
+        files = os.listdir(UPLOAD_FOLDER)
+
+        # Filter out directories, only return files
+        files = [file for file in files if os.path.isfile(os.path.join(UPLOAD_FOLDER, file))]
+
+        return jsonify({"files": files}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/upload_wav', methods=['POST'])
 @jwt_required()
@@ -226,19 +243,5 @@ def filter_data():
     return jsonify(data), 200
 
 
-@app.route('/send_command', methods=['POST'])
-@jwt_required()
-def send_command():
-    command = request.json.get('command')
-    if not command:
-        return jsonify({'error': 'No command provided'}), 400
-    # Execute the command and capture the output
-    try:
-        result = os.popen(command).read()  # Run the command on the Raspberry Pi
-        return jsonify({'message': 'Command executed', 'result': result}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0',port='5000')

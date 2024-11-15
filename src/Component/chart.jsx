@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -12,7 +12,7 @@ import {
 } from "chart.js";
 import "chartjs-adapter-date-fns";
 import zoomPlugin from "chartjs-plugin-zoom";
-import { Button } from "antd";
+import { Button, Modal } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 
 // Register necessary Chart.js modules and plugins
@@ -27,23 +27,24 @@ ChartJS.register(
   zoomPlugin
 );
 
-const Chart = ({ title, data, labels, borderColor = "rgba(75,192,192,1)" }) => {
-  // Reference for the chart instance
+const Chart = ({ title, data, labels, borderColor = "rgba(75,192,192,1)", fullData }) => {
   const chartRef = useRef(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [selectedData, setSelectedData] = useState(null);
 
   const chartData = {
-    labels, // Use datetime labels
+    labels,
     datasets: [
       {
         label: title,
-        data: data,
-        borderColor: borderColor, // Use the borderColor prop for dynamic color
-        backgroundColor: "rgba(75,192,192,0.1)", // Optional fill for visibility
-        borderWidth: 2, // Set line thickness
-        pointBackgroundColor: borderColor, // Point color matching line color
+        data,
+        borderColor: borderColor,
+        backgroundColor: "rgba(75,192,192,0.1)",
+        borderWidth: 2,
+        pointBackgroundColor: borderColor,
         pointBorderColor: borderColor,
-        pointRadius: 3, // Radius of points on the line
-        fill: false, // Disable fill under the line if not needed
+        pointRadius: 3,
+        fill: false,
         tension: 0.1,
       },
     ],
@@ -62,16 +63,16 @@ const Chart = ({ title, data, labels, borderColor = "rgba(75,192,192,1)" }) => {
       zoom: {
         pan: {
           enabled: true,
-          mode: "x", // Pan only along the x-axis
+          mode: "x",
         },
         zoom: {
           wheel: {
-            enabled: true, // Enable zooming with mouse wheel
+            enabled: true,
           },
           pinch: {
-            enabled: true, // Enable pinch zooming for touch devices
+            enabled: true,
           },
-          mode: "x", // Zoom only along the x-axis
+          mode: "x",
         },
       },
     },
@@ -84,7 +85,7 @@ const Chart = ({ title, data, labels, borderColor = "rgba(75,192,192,1)" }) => {
           displayFormats: {
             second: "HH:mm:ss",
           },
-          tooltipFormat: "yyyy-MM-dd HH:mm:ss.SSS", // Include milliseconds in tooltip
+          tooltipFormat: "yyyy-MM-dd HH:mm:ss.SSS",
         },
         title: {
           display: true,
@@ -99,9 +100,13 @@ const Chart = ({ title, data, labels, borderColor = "rgba(75,192,192,1)" }) => {
         },
       },
     },
-    animation: {
-      y: 0,
-      duration: 1,
+    onClick: (event) => {
+      const points = chartRef.current?.getElementsAtEventForMode(event, "nearest", { intersect: true }, false);
+      if (points.length) {
+        const pointIndex = points[0].index;
+        setSelectedData(fullData[pointIndex]);
+        setIsModalVisible(true);
+      }
     },
   };
 
@@ -128,6 +133,20 @@ const Chart = ({ title, data, labels, borderColor = "rgba(75,192,192,1)" }) => {
         Zoom Reset
       </Button>
       <Line ref={chartRef} data={chartData} options={options} />
+      
+      {/* Modal to display data */}
+      <Modal
+        title="Data Details"
+        visible={isModalVisible}
+        onCancel={() => setIsModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setIsModalVisible(false)}>
+            Close
+          </Button>,
+        ]}
+      >
+        <pre>{JSON.stringify(selectedData, null, 2)}</pre>
+      </Modal>
     </div>
   );
 };

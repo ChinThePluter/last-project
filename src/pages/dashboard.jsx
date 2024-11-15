@@ -1,7 +1,8 @@
-import React, { useState, useRef } from "react";
-import { Button } from "antd";
+import React, { useState, useRef, useEffect } from "react";
+import { Button, Modal, notification } from "antd";
 import { useNavigate } from "react-router-dom";
 import Chart from "../Component/chart";
+import axios from "axios";
 
 const MAX_POINTS = 200;
 
@@ -13,24 +14,99 @@ const DashboardPage = () => {
     force: { values: [], timestamps: [] },
     position: { values: [], timestamps: [] },
   });
+  const [piStatus, setPiStatus] = useState("stopped");
+  const [isConsoleVisible, setIsConsoleVisible] = useState(false);
+  const [fileList, setFileList] = useState([]);
+  const [selectedFile, setSelectedFile] = useState("");
 
   const navigate = useNavigate();
   const wsRef = useRef(null);
-  const apiKey = "e57972d26910e9d9e4caf68fd941c775"; // Store the API key here
-  const API_BASE = "http://127.0.0.1:5000";
+  const API_KEY = "piadmin"; // Store the API key here
+  const API_BASE = "http://192.168.1.108:5000";
+  const API_SERVER = "http://localhost:5000";
   let authToken = "";
 
-  const login = async () => {
+  const statusStyles = {
+    started: { color: "green", fontSize: "2em", fontWeight: "bold" },
+    stopped: { color: "orange", fontSize: "2em", fontWeight: "bold" },
+    error: { color: "red", fontSize: "2em", fontWeight: "bold" },
+  };
+
+  const handleFileSelect = (event) => {
+    setSelectedFile(event.target.value);
+  };
+
+  // const login = async () => {
+  //   try {
+  //     const response = await axios.post(`${API_BASE}/login`, {
+  //       username: "chin",
+  //       password: "1234",
+  //     });
+  //     authToken = response.data.access_token;
+  //   } catch (error) {
+  //     notification.error({ message: "Login failed" });
+  //   }
+  // };
+
+  const fetchFileList = async () => {
     try {
-      const response = await axios.post(`${API_BASE}/login`, {
-        username: "chin",
-        password: "1234",
+      const response = await axios.get(`${API_BASE}/list_files`, {
+        headers: { "X-API-KEY": API_KEY },
       });
-      authToken = response.data.access_token;
+      setFileList(response.files);
     } catch (error) {
-      notification.error({ message: "Login failed" });
+      console.error("Error fetching status:", error);
+      setPiStatus("error");
     }
   };
+
+  const handleDownload = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/list_files`, {
+        headers: { "X-API-KEY": API_KEY },
+      });
+      setFileList(response.files);
+    } catch (error) {
+      console.error("Error fetching status:", error);
+      setPiStatus("error");
+    }
+  };
+
+  const fetchStatus = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/status`, {
+        headers: { "X-API-KEY": API_KEY },
+      });
+      setPiStatus(response.data.state);
+    } catch (error) {
+      console.error("Error fetching status:", error);
+      setPiStatus("error");
+    }
+  };
+
+  const handleCommand = async (command) => {
+    try {
+      const { data } = await axios.post(
+        `${API_BASE}/${command}`,
+        {},
+        {
+          headers: { "X-API-KEY": API_KEY },
+        }
+      );
+      notification.success({ message: `Raspberry Pi ${command}ed` });
+    } catch {
+      notification.error({ message: `Failed to ${command} Raspberry Pi` });
+    }
+  };
+
+  useEffect(() => {
+    fetchStatus(); // Initial fetch on mount
+
+    const intervalId = setInterval(fetchStatus, 5000); // Fetch every 5 seconds
+
+    // Clean up the interval on component unmount
+    return () => clearInterval(intervalId);
+  }, []);
 
   const toggleStatus = () => {
     const newStatus = !isWorking;
@@ -148,12 +224,55 @@ const DashboardPage = () => {
         onClick={() => navigate("/review")}
         style={{ position: "absolute", top: "4vh", left: "4vw", zIndex: 1 }}
       >
-        Review
+        Reviewc
       </Button>
 
-      <h1>CRMA DASHBOARD</h1>
-      <h2>Status: {isWorking ? "Retrieving Data..." : "Not working"}</h2>
-      <button onClick={toggleStatus}>{isWorking ? "Stop" : "Start"}</button>
+      <h1>CRMA ALPHA DASHBOARD</h1>
+      <Modal
+        title="Raspberry Pi Console"
+        open={isConsoleVisible}
+        onCancel={() => setIsConsoleVisible(false)}
+        footer={null}
+      >
+        <Button key="stop" type="danger" onClick={() => handleCommand("stop")}>
+          Stop
+        </Button>
+        <Button
+          key="start"
+          type="primary"
+          onClick={() => handleCommand("start")}
+        >
+          Start
+        </Button>
+        <h2 style={statusStyles[piStatus]}>Status: {piStatus}</h2>
+        <p>Use the buttons below to start or stop the Raspberry Pi process.</p>
+        <label htmlFor="fileDropdown">Select a file:</label>
+        <select
+          id="fileDropdown"
+          value={selectedFile}
+          onChange={handleFileSelect}
+        >
+          <option value="">Select a File</option>
+          {fileList.map((file, index) => (
+            <option key={index} value={file}>
+              {file}
+            </option>
+          ))}
+        </select>
+        <button onClick={handleDownload}>Download</button>
+      </Modal>
+      <h2 style={statusStyles[piStatus]}>Status: {piStatus}</h2>
+      <Button
+        onClick={() => setIsConsoleVisible(true)}
+        type="primary"
+        disabled={piStatus === "error"}
+      >
+        Open Console
+      </Button>
+      <h2>WebSocket : {isWorking ? "Retrieving Data..." : "Not working"}</h2>
+      <button onClick={toggleStatus} style={{ borderColor: "white" }}>
+        {isWorking ? "Stop WebSocket" : "Start WebSocket"}
+      </button>
 
       <div
         style={{

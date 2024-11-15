@@ -15,6 +15,7 @@ const Review = () => {
     position: [],
     timestamps: [],
   });
+  const [fullData, setFullData] = useState([]); // Store all data points here
   const [authToken, setAuthToken] = useState("");
   const API_BASE = "http://localhost:5000";
 
@@ -44,7 +45,6 @@ const Review = () => {
         params: { start: startDate, end: endDate },
       });
 
-      // Create an array of objects with timestamp and data values
       const rawData = response.data.map((entry) => ({
         timestamp: moment(
           entry["timestamp"],
@@ -56,17 +56,14 @@ const Review = () => {
         position: entry["Position of the Punch"],
       }));
 
-      // Sort the array by timestamp
       rawData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-      // Extract sorted data into separate arrays
       const energyConsumption = rawData.map((item) => item.energyConsumption);
       const pressure = rawData.map((item) => item.pressure);
       const force = rawData.map((item) => item.force);
       const position = rawData.map((item) => item.position);
       const timestamps = rawData.map((item) => item.timestamp);
 
-      // Set the sorted data in state
       setReviewData({
         energyConsumption,
         pressure,
@@ -74,6 +71,7 @@ const Review = () => {
         position,
         timestamps,
       });
+      setFullData(rawData); // Store full data in state
     } catch (error) {
       notification.error({ message: "Failed to fetch data" });
       console.error("Fetch error:", error.response?.data || error.message);
@@ -86,9 +84,9 @@ const Review = () => {
 
   const applyFilter = () => {
     if (dateRange[0] && dateRange[1]) {
-      const startDate = dateRange[0].format("YYYY-MM-DD HH:mm:ss:SSS"); // Format with milliseconds
+      const startDate = dateRange[0].format("YYYY-MM-DD HH:mm:ss:SSS");
       const endDate = dateRange[1].format("YYYY-MM-DD HH:mm:ss:SSS");
-      fetchData(startDate, endDate); // Fetch data based on selected range
+      fetchData(startDate, endDate);
     }
   };
 
@@ -100,10 +98,11 @@ const Review = () => {
       position: [],
       timestamps: [],
     });
+    setFullData([]);
   };
 
   useEffect(() => {
-    login(); // Automatically log in on initial render
+    login();
   }, []);
 
   return (
@@ -122,7 +121,7 @@ const Review = () => {
         onClick={() => navigate("/")}
         style={{ position: "absolute", top: "4vh", right: "4vw", zIndex: 1 }}
       >
-        Go to Home
+        Go to Dashboard
       </Button>
 
       <h1>Raspberry Pi Review</h1>
@@ -169,24 +168,28 @@ const Review = () => {
           data={reviewData.energyConsumption}
           labels={reviewData.timestamps}
           borderColor="lightblue"
+          fullData={fullData}
         />
         <Chart
           title="Pressure"
           data={reviewData.pressure}
           labels={reviewData.timestamps}
           borderColor="#FF7F7F"
+          fullData={fullData}
         />
         <Chart
           title="Force"
           data={reviewData.force}
           labels={reviewData.timestamps}
           borderColor="orange"
+          fullData={fullData}
         />
         <Chart
           title="Position of Punch"
           data={reviewData.position}
           labels={reviewData.timestamps}
           borderColor="purple"
+          fullData={fullData}
         />
       </div>
     </div>
